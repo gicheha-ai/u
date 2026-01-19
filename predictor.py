@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from talib import add_all_talib_features
+from talib import add_all_ta_features
 from talib.momentum import RSIIndicator
 from talib.trend import MACD, EMAIndicator
 from talib.volatility import BollingerBands
