@@ -5,5 +5,5 @@ numpy==2.1.0
 scikit-learn==1.8.0
 matplotlib==3.10.1
 python-dotenv==1.2.1
-TA-Lib==0.5.6
+TA-Lib==0.6.5
 gunicorn==21.2.0
