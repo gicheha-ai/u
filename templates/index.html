@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EUR/USD Forex Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00b4db, #0083b0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #a0a0c0;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .pair-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .pair {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00b4db;
+        }
+        
+        .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .price.up {
+            color: #00ff88;
+        }
+        
+        .price.down {
+            color: #ff4444;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            background: linear-gradient(90deg, #00b4db, #0083b0);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #forexChart {
+            height: 500px;
+            width: 100%;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-card h3 {
+            color: #00b4db;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-card h3 i {
+            font-size: 1.2rem;
+        }
+        
+        .prediction-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+        
+        .prediction-item.buy {
+            border-left-color: #00b4db;
+        }
+        
+        .prediction-item.sell {
+            border-left-color: #ff4444;
+        }
+        
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .signal {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .signal.buy {
+            color: #00b4db;
+        }
+        
+        .signal.sell {
+            color: #ff4444;
+        }
+        
+        .confidence {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .prediction-details {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            line-height: 1.5;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00b4db;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.buy {
+            background: #00b4db;
+        }
+        
+        .legend-color.sell {
+            background: #ff4444;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a0a0c0;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #00b4db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EUR/USD Forex Predictor</h1>
+            <p class="subtitle">AI-powered predictions with entry points detection</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="pair-info">
+                        <div class="pair">EUR/USD</div>
+                        <div class="price" id="currentPrice">1.0850</div>
+                        <div class="change" id="priceChange">+0.12%</div>
+                    </div>
+                    <div class="controls">
+                        <button id="predictBtn" onclick="loadPredictions()">
+                            Generate Predictions
+                        </button>
+                        <button id="updateBtn" onclick="updateData()">
+                            Update Data
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p>Analyzing market data and generating predictions...</p>
+                </div>
+                
+                <canvas id="forexChart"></canvas>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color buy"></div>
+                        <span>Buy Entry Point</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color sell"></div>
+                        <span>Sell Entry Point</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="info-card">
+                    <h3>🎯 Entry Points</h3>
+                    <div id="entryPoints">
+                        <div class="prediction-item">
+                            <div class="prediction-details">
+                                Click "Generate Predictions" to analyze EUR/USD
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>📊 Market Statistics</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Prediction Accuracy</div>
+                            <div class="stat-value" id="accuracy">--%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Signals</div>
+                            <div class="stat-value" id="totalSignals">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Buy Signals</div>
+                            <div class="stat-value" id="buySignals">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Sell Signals</div>
+                            <div class="stat-value" id="sellSignals">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>⚠️ Risk Disclaimer</h3>
+                    <p style="color: #a0a0c0; font-size: 0.9rem; line-height: 1.6;">
+                        This tool provides AI-generated predictions for educational purposes only. 
+                        Forex trading involves substantial risk of loss. Past performance does not 
+                        guarantee future results. Always conduct your own research and consult with 
+                        a qualified financial advisor before making trading decisions.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Data provided by Alpha Vantage • Predictions generated by machine learning model</p>
+            <p>Last updated: <span id="lastUpdated">--</span></p>
+        </footer>
+    </div>
+
+    <script>
+        let forexChart;
+        let chartData = null;
+        
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('forexChart').getContext('2d');
+            
+            forexChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'EUR/USD Price',
+                            data: [],
+                            borderColor: 'rgba(0, 180, 219, 0.8)',
+                            backgroundColor: 'rgba(0, 180, 219, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update chart with data
+        function updateChart(data) {
+            if (!forexChart) initChart();
+            
+            // Update labels and data
+            forexChart.data.labels = data.timestamps;
+            forexChart.data.datasets[0].data = data.prices;
+            
+            // Remove previous entry point datasets
+            forexChart.data.datasets = forexChart.data.datasets.slice(0, 1);
+            
+            // Add entry points as scatter plots
+            if (data.entry_points && data.entry_points.length > 0) {
+                data.entry_points.forEach((point, index) => {
+                    const color = point.type === 'buy' ? '#00b4db' : '#ff4444';
+                    
+                    // Find the index of this timestamp in the labels
+                    const pointIndex = data.timestamps.indexOf(point.timestamp);
+                    if (pointIndex !== -1) {
+                        forexChart.data.datasets.push({
+                            label: point.type === 'buy' ? 'Buy Entry' : 'Sell Entry',
+                            data: data.prices.map((price, idx) => 
+                                idx === pointIndex ? price : null
+                            ),
+                            type: 'scatter',
+                            backgroundColor: color,
+                            borderColor: color,
+                            pointRadius: 8,
+                            pointHoverRadius: 12,
+                            borderWidth: 2,
+                            showLine: false
+                        });
+                    }
+                });
+            }
+            
+            forexChart.update();
+            
+            // Update statistics
+            updateStatistics(data);
+        }
+        
+        // Update statistics display
+        function updateStatistics(data) {
+            if (data.entry_points) {
+                const buySignals = data.entry_points.filter(p => p.type === 'buy').length;
+                const sellSignals = data.entry_points.filter(p => p.type === 'sell').length;
+                
+                document.getElementById('totalSignals').textContent = data.entry_points.length;
+                document.getElementById('buySignals').textContent = buySignals;
+                document.getElementById('sellSignals').textContent = sellSignals;
+                
+                // Calculate average confidence as "accuracy"
+                if (data.entry_points.length > 0) {
+                    const avgConfidence = data.entry_points.reduce((sum, p) => sum + p.confidence, 0) / data.entry_points.length;
+                    document.getElementById('accuracy').textContent = `${(avgConfidence * 100).toFixed(1)}%`;
+                }
+            }
+            
+            // Update current price if we have data
+            if (data.prices && data.prices.length > 0) {
+                const currentPrice = data.prices[data.prices.length - 1];
+                const prevPrice = data.prices[data.prices.length - 2] || currentPrice;
+                const change = ((currentPrice - prevPrice) / prevPrice * 100);
+                
+                document.getElementById('currentPrice').textContent = currentPrice.toFixed(4);
+                document.getElementById('priceChange').textContent = 
+                    `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                
+                const priceElement = document.getElementById('currentPrice');
+                priceElement.className = change >= 0 ? 'price up' : 'price down';
+            }
+            
+            // Update last updated time
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+        }
+        
+        // Load predictions from server
+        async function loadPredictions() {
+            const predictBtn = document.getElementById('predictBtn');
+            const updateBtn = document.getElementById('updateBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // Show loading state
+            predictBtn.disabled = true;
+            updateBtn.disabled = true;
+            loadingIndicator.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/predict');
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    chartData = data;
+                    updateChart(data);
+                    updateEntryPointsDisplay(data.entry_points);
+                }
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+                alert('Failed to load predictions. Please try again.');
+            } finally {
+                // Hide loading state
+                predictBtn.disabled = false;
+                updateBtn.disabled = false;
+                loadingIndicator.style.display = 'none';
+            }
+        }
+        
+        // Update data manually
+        async function updateData() {
+            const updateBtn = document.getElementById('updateBtn');
+            updateBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/update');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert(`Data updated successfully! ${result.data_points} data points loaded.`);
+                    // Reload predictions after updating data
+                    setTimeout(loadPredictions, 1000);
+                } else {
+                    alert('Failed to update data. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error updating data:', error);
+                alert('Failed to update data. Please try again.');
+            } finally {
+                updateBtn.disabled = false;
+            }
+        }
+        
+        // Update entry points display
+        function updateEntryPointsDisplay(entryPoints) {
+            const container = document.getElementById('entryPoints');
+            
+            if (!entryPoints || entryPoints.length === 0) {
+                container.innerHTML = `
+                    <div class="prediction-item">
+                        <div class="prediction-details">
+                            No high-confidence entry points found in current data.
+                            Try updating the data or check back later.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = entryPoints.map(point => `
+                <div class="prediction-item ${point.type}">
+                    <div class="prediction-header">
+                        <div class="signal ${point.type}">
+                            ${point.type.toUpperCase()} @ ${point.price.toFixed(4)}
+                        </div>
+                        <div class="confidence">
+                            ${(point.confidence * 100).toFixed(1)}% conf
+                        </div>
+                    </div>
+                    <div class="prediction-details">
+                        ${point.reason}<br>
+                        Time: ${point.timestamp}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            // Load initial data
+            setTimeout(loadPredictions, 1000);
+        });
+    </script>
+</body>
+</html>

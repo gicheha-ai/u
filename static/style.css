@@ -1,0 +1,41 @@
+/* Additional styles can be added here */
+.chart-tooltip {
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 5px;
+    padding: 10px;
+    color: white;
+    font-size: 12px;
+}
+
+.prediction-marker {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chart-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .controls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .pair-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .stats {
+        grid-template-columns: 1fr;
+    }
+}
