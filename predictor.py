@@ -2,10 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-import ta
-from ta.momentum import RSIIndicator
-from ta.trend import MACD, EMAIndicator
-from ta.volatility import BollingerBands
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -15,6 +11,24 @@ class ForexPredictor:
         self.scaler = StandardScaler()
         self.is_trained = False
         
+    def calculate_rsi(self, prices, period=14):
+        """Calculate RSI manually"""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    
+    def calculate_macd(self, prices, slow=26, fast=12, signal=9):
+        """Calculate MACD manually"""
+        exp1 = prices.ewm(span=fast, adjust=False).mean()
+        exp2 = prices.ewm(span=slow, adjust=False).mean()
+        macd = exp1 - exp2
+        signal_line = macd.ewm(span=signal, adjust=False).mean()
+        histogram = macd - signal_line
+        return macd, signal_line, histogram
+    
     def create_features(self, df):
         """Create technical features for prediction"""
         df = df.copy()
@@ -24,28 +38,27 @@ class ForexPredictor:
         df['high_low_ratio'] = df['high'] / df['low']
         df['close_open_ratio'] = df['close'] / df['open']
         
-        # Technical indicators using ta library
-        # RSI
-        rsi = RSIIndicator(close=df['close'], window=14)
-        df['rsi'] = rsi.rsi()
+        # Calculate RSI manually
+        df['rsi'] = self.calculate_rsi(df['close'])
         
-        # MACD
-        macd = MACD(close=df['close'])
-        df['macd'] = macd.macd()
-        df['macd_signal'] = macd.macd_signal()
-        df['macd_diff'] = macd.macd_diff()
+        # Calculate MACD manually
+        macd, signal_line, histogram = self.calculate_macd(df['close'])
+        df['macd'] = macd
+        df['macd_signal'] = signal_line
+        df['macd_diff'] = histogram
         
         # Moving averages
-        df['ema_12'] = EMAIndicator(close=df['close'], window=12).ema_indicator()
-        df['ema_26'] = EMAIndicator(close=df['close'], window=26).ema_indicator()
+        df['ema_12'] = df['close'].ewm(span=12, adjust=False).mean()
+        df['ema_26'] = df['close'].ewm(span=26, adjust=False).mean()
         df['sma_20'] = df['close'].rolling(window=20).mean()
         df['sma_50'] = df['close'].rolling(window=50).mean()
         
         # Bollinger Bands
-        bb = BollingerBands(close=df['close'], window=20, window_dev=2)
-        df['bb_high'] = bb.bollinger_hband()
-        df['bb_low'] = bb.bollinger_lband()
-        df['bb_width'] = bb.bollinger_wband()
+        df['bb_middle'] = df['close'].rolling(window=20).mean()
+        bb_std = df['close'].rolling(window=20).std()
+        df['bb_high'] = df['bb_middle'] + (bb_std * 2)
+        df['bb_low'] = df['bb_middle'] - (bb_std * 2)
+        df['bb_width'] = (df['bb_high'] - df['bb_low']) / df['bb_middle']
         
         # Price position
         df['price_above_sma20'] = (df['close'] > df['sma_20']).astype(int)
@@ -85,8 +98,7 @@ class ForexPredictor:
             max_depth=10,
             min_samples_split=5,
             min_samples_leaf=2,
-            random_state=42,
-            n_jobs=-1
+            random_state=42
         )
         
         self.model.fit(X_scaled, y)
